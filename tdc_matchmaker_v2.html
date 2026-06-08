@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TDC Matchmaker Dashboard v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ── RESET & BASE ── */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --rose:#C9647A;--rose-light:#F5E8EB;--rose-mid:#E8B4BE;--rose-dark:#8B3347;
+  --gold:#B8860B;--gold-light:#FAF3DC;--gold-mid:#DFC56A;
+  --ink:#1A1410;--ink2:#3D2E28;--muted:#7A6A62;--border:#E8DDD8;--bg:#FDFAF8;--card:#FFFFFF;
+  --success:#2D7A4F;--success-bg:#E8F5EE;
+  --warning:#B8600B;--warning-bg:#FFF3E8;
+  --info:#185FA5;--info-bg:#E6F1FB;
+  /* Dark mode overrides */
+  --dm-bg:#0F0A0C;--dm-card:#1C1214;--dm-border:#2E1E24;--dm-ink:#F0E8E8;--dm-muted:#A08890;
+}
+/* Dark mode theme */
+body.dark{background:var(--dm-bg);color:var(--dm-ink)}
+body.dark .sidebar{background:#0A0608}
+body.dark .main-content{background:var(--dm-bg)}
+body.dark .stat-card,body.dark .clients-table,body.dark .detail-section,body.dark .notes-section,body.dark .match-card,body.dark .modal-box,body.dark .notes-modal-box{background:var(--dm-card);border-color:var(--dm-border)}
+body.dark .table-head{background:#1A0E12;border-color:var(--dm-border)}
+body.dark .client-row{border-color:var(--dm-border)}
+body.dark .client-row:hover{background:#1F1216}
+body.dark .filter-bar input,body.dark .filter-bar select,body.dark .notes-input{background:var(--dm-card);border-color:var(--dm-border);color:var(--dm-ink)}
+body.dark .c-name,body.dark .stat-val,body.dark .match-name,body.dark .field-item p{color:var(--dm-ink)}
+body.dark .c-email,body.dark .stat-label,body.dark .match-info,body.dark .match-reason,body.dark .field-item label{color:var(--dm-muted)}
+body.dark .pager-btn{background:var(--dm-card);border-color:var(--dm-border);color:var(--dm-ink)}
+body.dark .modal-cancel{background:var(--dm-card);border-color:var(--dm-border);color:var(--dm-muted)}
+body.dark .modal-email-preview{background:var(--dm-bg);border-color:var(--dm-border);color:var(--dm-ink)}
+body.dark .page-title{color:var(--dm-ink)}
+body.dark .page-sub{color:var(--dm-muted)}
+body.dark .detail-section h3{color:var(--dm-muted)}
+body.dark .notes-section h3{color:var(--dm-muted)}
+
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;font-size:14px;transition:background 0.3s,color 0.3s}
+h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:500}
+
+/* ── LOGIN ── */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1A0A0E 0%,#2D1520 50%,#1A0A0E 100%)}
+.login-card{background:rgba(255,255,255,0.04);border:1px solid rgba(201,100,122,0.3);border-radius:16px;padding:48px 40px;width:380px;text-align:center;backdrop-filter:blur(12px)}
+.login-logo{font-family:'Cormorant Garamond',serif;font-size:32px;color:#E8B4BE;letter-spacing:0.05em;margin-bottom:4px}
+.login-sub{color:rgba(201,100,122,0.7);font-size:12px;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:32px}
+.login-card input{width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(201,100,122,0.25);border-radius:8px;padding:12px 16px;color:#F5E8EB;font-family:'DM Sans',sans-serif;font-size:14px;margin-bottom:12px;outline:none;transition:border-color 0.2s}
+.login-card input::placeholder{color:rgba(201,100,122,0.4)}
+.login-card input:focus{border-color:rgba(201,100,122,0.6)}
+.login-btn{width:100%;background:linear-gradient(135deg,#C9647A,#A84D62);border:none;border-radius:8px;padding:13px;color:white;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:opacity 0.2s;margin-top:4px}
+.login-btn:hover{opacity:0.9}
+.login-hint{color:rgba(201,100,122,0.5);font-size:11px;margin-top:16px}
+.login-err{color:#F09595;font-size:12px;margin-top:8px}
+
+/* ── APP SHELL ── */
+#app{display:none;flex-direction:row;min-height:100vh}
+.sidebar{width:220px;background:#1A0A0E;flex-shrink:0;display:flex;flex-direction:column;padding:24px 0;transition:background 0.3s}
+.sidebar-logo{font-family:'Cormorant Garamond',serif;font-size:22px;color:#E8B4BE;padding:0 20px 24px;border-bottom:1px solid rgba(201,100,122,0.15);letter-spacing:0.05em}
+.sidebar-logo span{color:rgba(201,100,122,0.5);font-size:11px;display:block;letter-spacing:0.12em;text-transform:uppercase;margin-top:2px}
+.sidebar-nav{padding:16px 0;flex:1}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:rgba(232,180,190,0.6);cursor:pointer;transition:all 0.15s;font-size:13px;border-left:2px solid transparent}
+.nav-item:hover{color:#E8B4BE;background:rgba(201,100,122,0.08)}
+.nav-item.active{color:#E8B4BE;background:rgba(201,100,122,0.12);border-left-color:#C9647A}
+.nav-item svg{width:16px;height:16px;flex-shrink:0}
+.sidebar-footer{padding:16px 20px;border-top:1px solid rgba(201,100,122,0.15)}
+.matchmaker-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#C9647A,#8B3347);display:flex;align-items:center;justify-content:center;color:white;font-size:12px;font-weight:500;flex-shrink:0}
+.matchmaker-info p{font-size:12px;color:#E8B4BE}
+.matchmaker-info span{font-size:11px;color:rgba(201,100,122,0.5)}
+.logout-btn{background:none;border:none;color:rgba(201,100,122,0.4);font-size:11px;cursor:pointer;margin-top:8px;padding:0;font-family:'DM Sans',sans-serif}
+.logout-btn:hover{color:#C9647A}
+
+/* ── DARK MODE TOGGLE ── */
+.dark-toggle{display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer}
+.toggle-track{width:36px;height:20px;background:rgba(201,100,122,0.2);border-radius:10px;position:relative;transition:background 0.2s;border:1px solid rgba(201,100,122,0.3)}
+.toggle-thumb{width:14px;height:14px;background:#C9647A;border-radius:50%;position:absolute;top:2px;left:2px;transition:left 0.2s}
+.toggle-track.on{background:rgba(201,100,122,0.4)}
+.toggle-track.on .toggle-thumb{left:18px}
+.toggle-label{font-size:11px;color:rgba(201,100,122,0.5)}
+
+/* ── MAIN ── */
+.main-content{flex:1;overflow-y:auto;background:var(--bg);transition:background 0.3s}
+.page{display:none;padding:28px 32px}
+.page.active{display:block}
+
+/* ── STATS ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px;transition:background 0.3s,border-color 0.3s}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px}
+.stat-val{font-size:26px;font-family:'Cormorant Garamond',serif;color:var(--ink);font-weight:500}
+.stat-sub{font-size:11px;color:var(--success);margin-top:2px}
+
+/* ── JOURNEY TRACKER ── */
+.journey-stages{display:flex;align-items:center;gap:0;margin:20px 0}
+.journey-stage{flex:1;text-align:center;position:relative}
+.journey-stage:not(:last-child)::after{content:'';position:absolute;right:-1px;top:50%;transform:translateY(-50%);width:2px;height:20px;background:var(--border);z-index:1}
+.stage-dot{width:28px;height:28px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;border:2px solid var(--border)}
+.stage-dot.done{background:var(--success-bg);border-color:var(--success);color:var(--success)}
+.stage-dot.current{background:var(--rose-light);border-color:var(--rose);color:var(--rose-dark)}
+.stage-dot.pending{background:#F5F5F5;color:var(--muted)}
+.stage-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em}
+
+/* ── PROFILE COMPLETENESS ── */
+.completeness-bar{height:4px;background:#EEE;border-radius:2px;overflow:hidden;margin-top:4px}
+.completeness-fill{height:100%;border-radius:2px;background:var(--rose);transition:width 0.4s}
+
+/* ── FILTER ── */
+.filter-bar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+.filter-bar input,.filter-bar select{background:var(--card);border:1px solid var(--border);border-radius:7px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);outline:none;transition:background 0.3s,border-color 0.3s}
+.filter-bar input{flex:1;min-width:200px}
+.filter-bar input:focus,.filter-bar select:focus{border-color:var(--rose-mid)}
+.export-btn{padding:8px 14px;background:var(--rose-light);color:var(--rose-dark);border:1px solid var(--rose-mid);border-radius:7px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;font-weight:500}
+.export-btn:hover{background:var(--rose);color:white}
+
+/* ── TABLE ── */
+.clients-table{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:background 0.3s,border-color 0.3s}
+.table-head{display:grid;grid-template-columns:2fr 0.7fr 1fr 1fr 1fr 0.8fr 110px;padding:10px 16px;background:#F5F0EE;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted)}
+.client-row{display:grid;grid-template-columns:2fr 0.7fr 1fr 1fr 1fr 0.8fr 110px;padding:13px 16px;border-bottom:1px solid var(--border);align-items:center;cursor:pointer;transition:background 0.15s}
+.client-row:hover{background:#FAF5F3}
+.client-row:last-child{border-bottom:none}
+.client-name-cell{display:flex;align-items:center;gap:10px}
+.c-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0}
+.c-avatar.male{background:#E6F1FB;color:#185FA5}
+.c-avatar.female{background:var(--rose-light);color:var(--rose-dark)}
+.c-name{font-size:13px;font-weight:500;color:var(--ink)}
+.c-email{font-size:11px;color:var(--muted)}
+.completeness-mini{width:60px}
+.completeness-mini span{font-size:10px;color:var(--muted)}
+.status-tag{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500}
+.tag-active{background:var(--success-bg);color:var(--success)}
+.tag-matched{background:var(--info-bg);color:var(--info)}
+.tag-pending{background:var(--warning-bg);color:var(--warning)}
+.tag-onboarding{background:#F3EEFF;color:#534AB7}
+.view-btn{padding:5px 12px;background:var(--rose-light);color:var(--rose-dark);border:1px solid var(--rose-mid);border-radius:6px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s}
+.view-btn:hover{background:var(--rose);color:white;border-color:var(--rose)}
+.pager{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
+.pager-btns{display:flex;gap:6px}
+.pager-btn{padding:5px 12px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:white;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--ink)}
+.pager-btn:hover{border-color:var(--rose-mid);color:var(--rose)}
+.pager-btn:disabled{opacity:0.4;cursor:default}
+
+/* ── DETAIL ── */
+#detail-page{padding:0}
+.detail-header{background:linear-gradient(135deg,#1A0A0E 0%,#3D1520 100%);padding:28px 32px;display:flex;align-items:flex-start;gap:20px}
+.detail-back{background:rgba(201,100,122,0.15);border:1px solid rgba(201,100,122,0.3);color:#E8B4BE;border-radius:7px;padding:7px 14px;cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif;display:inline-flex;align-items:center;gap:6px;transition:all 0.15s}
+.detail-back:hover{background:rgba(201,100,122,0.25)}
+.detail-avatar{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:500;flex-shrink:0}
+.detail-avatar.male{background:rgba(24,95,165,0.3);color:#85B7EB}
+.detail-avatar.female{background:rgba(201,100,122,0.3);color:#E8B4BE}
+.detail-meta h2{font-family:'Cormorant Garamond',serif;font-size:26px;color:white;font-weight:500}
+.detail-meta p{color:rgba(232,180,190,0.7);font-size:13px;margin-top:3px}
+.detail-tags{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.detail-tag{background:rgba(201,100,122,0.15);border:1px solid rgba(201,100,122,0.25);color:#E8B4BE;padding:4px 10px;border-radius:20px;font-size:11px}
+.detail-body{padding:24px 32px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.detail-section{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px;transition:background 0.3s,border-color 0.3s}
+.detail-section h3{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;font-family:'DM Sans',sans-serif;font-weight:500}
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field-item label{font-size:11px;color:var(--muted);display:block;margin-bottom:2px}
+.field-item p{font-size:13px;color:var(--ink);font-weight:500}
+
+/* Journey tracker in detail */
+.journey-section{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:20px;transition:background 0.3s,border-color 0.3s}
+.journey-section h3{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;font-family:'DM Sans',sans-serif;font-weight:500}
+.journey-steps{display:flex;gap:0;align-items:center}
+.journey-step{flex:1;display:flex;flex-direction:column;align-items:center;position:relative}
+.journey-step:not(:last-child)::after{content:'';position:absolute;right:0;top:14px;width:50%;height:2px;background:var(--border)}
+.journey-step:not(:first-child)::before{content:'';position:absolute;left:0;top:14px;width:50%;height:2px;background:var(--border)}
+.journey-step.done::after,.journey-step.done::before{background:var(--success)}
+.journey-step.current::before{background:var(--success)}
+.js-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;border:2px solid var(--border);background:var(--card);z-index:1;position:relative}
+.journey-step.done .js-dot{background:var(--success-bg);border-color:var(--success);color:var(--success)}
+.journey-step.current .js-dot{background:var(--rose-light);border-color:var(--rose);color:var(--rose-dark)}
+.js-label{font-size:10px;color:var(--muted);margin-top:6px;text-align:center;text-transform:uppercase;letter-spacing:0.05em}
+.stage-select{margin-top:10px;font-family:'DM Sans',sans-serif;font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--ink);cursor:pointer}
+
+/* ── MATCHES ── */
+.matches-section{margin-top:20px}
+.matches-section h3{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--ink);margin-bottom:4px}
+.matches-sub{color:var(--muted);font-size:13px;margin-bottom:16px}
+.ai-generate-btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;background:linear-gradient(135deg,#C9647A,#A84D62);color:white;border:none;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;transition:opacity 0.2s;margin-bottom:16px}
+.ai-generate-btn:hover{opacity:0.9}
+.ai-generate-btn:disabled{opacity:0.6;cursor:default}
+.matches-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.match-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;transition:border-color 0.15s,background 0.3s}
+.match-card:hover{border-color:var(--rose-mid)}
+.match-top{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px}
+.match-avatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;flex-shrink:0}
+.match-avatar.male{background:#E6F1FB;color:#185FA5}
+.match-avatar.female{background:var(--rose-light);color:var(--rose-dark)}
+.match-name{font-size:14px;font-weight:500;color:var(--ink)}
+.match-info{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.5}
+.score-badge{margin-left:auto;text-align:center;flex-shrink:0}
+.score-num{font-size:20px;font-family:'Cormorant Garamond',serif;font-weight:600;line-height:1}
+.score-label{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em}
+.score-high .score-num{color:var(--success)}
+.score-high .score-label{color:var(--success)}
+.score-med .score-num{color:var(--warning)}
+.score-med .score-label{color:var(--warning)}
+.score-low .score-num{color:var(--muted)}
+.score-low .score-label{color:var(--muted)}
+.match-reason{font-size:12px;color:var(--muted);line-height:1.5;border-top:1px solid var(--border);padding-top:10px;margin-top:10px;font-style:italic}
+.ai-reason{font-size:12px;color:var(--info);background:var(--info-bg);border-radius:6px;padding:8px 10px;margin-top:8px;line-height:1.5}
+.match-actions{display:flex;gap:8px;margin-top:12px}
+.send-btn{flex:1;padding:7px;background:var(--rose);color:white;border:none;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;transition:opacity 0.2s}
+.send-btn:hover{opacity:0.85}
+.notes-btn{padding:7px 12px;background:var(--card);color:var(--muted);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px}
+.notes-btn:hover{border-color:var(--rose-mid);color:var(--rose)}
+
+/* ── NOTES ── */
+.notes-section{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-top:20px;transition:background 0.3s,border-color 0.3s}
+.notes-section h3{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px;font-family:'DM Sans',sans-serif;font-weight:500}
+.notes-input{width:100%;border:1px solid var(--border);border-radius:7px;padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);outline:none;resize:vertical;min-height:80px;background:var(--bg);transition:background 0.3s}
+.notes-input:focus{border-color:var(--rose-mid)}
+.add-note-btn{margin-top:8px;padding:7px 16px;background:var(--rose-light);color:var(--rose-dark);border:1px solid var(--rose-mid);border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px}
+.note-item{padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--ink)}
+.note-item:last-child{border-bottom:none}
+.note-date{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* ── MODALS ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(26,10,14,0.7);z-index:100;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-box{background:var(--card);border-radius:12px;padding:28px;width:480px;max-width:95vw;border:1px solid var(--border);transition:background 0.3s}
+.modal-box h3{font-family:'Cormorant Garamond',serif;font-size:22px;margin-bottom:4px}
+.modal-box p{color:var(--muted);font-size:13px;margin-bottom:16px}
+.modal-email-preview{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-size:13px;line-height:1.7;color:var(--ink);margin-bottom:16px;white-space:pre-wrap;transition:background 0.3s}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end}
+.modal-cancel{padding:8px 18px;background:white;border:1px solid var(--border);border-radius:7px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--muted)}
+.modal-send{padding:8px 20px;background:var(--rose);color:white;border:none;border-radius:7px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500}
+.modal-send:hover{opacity:0.9}
+.notes-modal-overlay{position:fixed;inset:0;background:rgba(26,10,14,0.7);z-index:100;display:flex;align-items:center;justify-content:center}
+.notes-modal-box{background:var(--card);border-radius:12px;padding:24px;width:400px;max-width:95vw;transition:background 0.3s}
+.notes-modal-box h4{font-size:15px;margin-bottom:12px}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;right:24px;background:#1A1410;color:#E8DDD8;padding:12px 20px;border-radius:8px;font-size:13px;z-index:200;opacity:0;transition:opacity 0.3s;pointer-events:none}
+.toast.show{opacity:1}
+.page-header{margin-bottom:24px}
+.page-title{font-size:28px;color:var(--ink);line-height:1.2}
+.page-sub{color:var(--muted);font-size:13px;margin-top:4px}
+.loading-dots::after{content:'...';animation:dots 1s infinite}
+@keyframes dots{0%{content:'.'}33%{content:'..'}66%{content:'...'}100%{'.'}}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN SCREEN ══ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">TDC</div>
+    <div class="login-sub">Matchmaker Portal · v2</div>
+    <input type="text" id="login-user" placeholder="Username" value="priya.sharma">
+    <input type="password" id="login-pass" placeholder="Password" value="tdc@2024">
+    <button class="login-btn" onclick="doLogin()">Sign In</button>
+    <div class="login-err" id="login-err"></div>
+    <div class="login-hint">Demo: priya.sharma / tdc@2024</div>
+  </div>
+</div>
+
+<!-- ══ APP SHELL ══ -->
+<div id="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">The Date Crew<span>Matchmaker Portal</span></div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" onclick="showPage('dashboard')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item" onclick="showPage('clients')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Clients
+      </div>
+      <div class="nav-item" onclick="showPage('matches')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        Matches
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="matchmaker-avatar">PS</div>
+        <div class="matchmaker-info"><p>Priya Sharma</p><span>Senior Matchmaker</span></div>
+      </div>
+      <!-- Dark/light mode toggle -->
+      <div class="dark-toggle" onclick="toggleDark()">
+        <div class="toggle-track" id="dark-track"><div class="toggle-thumb"></div></div>
+        <span class="toggle-label" id="dark-label">Dark mode</span>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="main-content">
+
+    <!-- ══ DASHBOARD PAGE ══ -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <h1 class="page-title">Good morning, Priya 🌸</h1>
+        <p class="page-sub">Here's your matchmaking overview for today</p>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-label">Total Clients</div><div class="stat-val" id="stat-total">—</div><div class="stat-sub">Active portfolio</div></div>
+        <div class="stat-card"><div class="stat-label">Active</div><div class="stat-val" id="stat-active">—</div><div class="stat-sub">Searching</div></div>
+        <div class="stat-card"><div class="stat-label">Matched</div><div class="stat-val" id="stat-matched">—</div><div class="stat-sub">This month</div></div>
+        <div class="stat-card"><div class="stat-label">Pending</div><div class="stat-val" id="stat-pending">—</div><div class="stat-sub">Awaiting action</div></div>
+      </div>
+      <div id="dashboard-recent"></div>
+    </div>
+
+    <!-- ══ CLIENTS PAGE ══ -->
+    <div class="page" id="page-clients">
+      <div class="page-header">
+        <h1 class="page-title">Client Portfolio</h1>
+        <p class="page-sub">Manage and view all assigned clients</p>
+      </div>
+      <div class="filter-bar">
+        <input type="text" id="search-input" placeholder="Search by name, city, profession…" oninput="currentPage=0;renderTable()">
+        <select id="filter-status" onchange="currentPage=0;renderTable()">
+          <option value="">All Statuses</option>
+          <option>Active</option><option>Matched</option><option>Pending</option><option>Onboarding</option>
+        </select>
+        <select id="filter-gender" onchange="currentPage=0;renderTable()">
+          <option value="">All Genders</option><option>Male</option><option>Female</option>
+        </select>
+        <select id="filter-city" onchange="currentPage=0;renderTable()">
+          <option value="">All Cities</option>
+        </select>
+        <!-- Export filtered list as CSV -->
+        <button class="export-btn" onclick="exportCSV()">↓ Export CSV</button>
+      </div>
+      <div class="clients-table">
+        <div class="table-head">
+          <div>Client</div><div>Age</div><div>City</div><div>Profession</div><div>Status</div><div>Profile</div><div></div>
+        </div>
+        <div id="client-rows"></div>
+        <div class="pager">
+          <span id="pager-info"></span>
+          <div class="pager-btns">
+            <button class="pager-btn" id="btn-prev" onclick="changePage(-1)">← Prev</button>
+            <button class="pager-btn" id="btn-next" onclick="changePage(1)">Next →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ DETAIL PAGE ══ -->
+    <div class="page" id="page-detail" style="padding:0">
+      <div class="detail-header" id="detail-header"></div>
+      <div class="detail-body" id="detail-body"></div>
+    </div>
+
+    <!-- ══ MATCHES ACTIVITY PAGE ══ -->
+    <div class="page" id="page-matches">
+      <div class="page-header">
+        <h1 class="page-title">Match Activity</h1>
+        <p class="page-sub">All sent introductions and match history</p>
+      </div>
+      <div id="match-activity-list" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;transition:background 0.3s,border-color 0.3s"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ SEND MATCH MODAL ══ -->
+<div class="modal-overlay" id="send-modal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <h3>Send Match Introduction</h3>
+    <p id="modal-subtitle">Sending match details to client</p>
+    <div class="modal-email-preview" id="modal-email-body"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-send" onclick="confirmSend()">Send Introduction ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ NOTES MODAL ══ -->
+<div class="notes-modal-overlay" id="notes-modal" style="display:none">
+  <div class="notes-modal-box">
+    <h4 id="notes-modal-title">Add Note</h4>
+    <textarea class="notes-input" id="notes-modal-input" placeholder="Enter your note…" style="width:100%;min-height:80px"></textarea>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+      <button class="modal-cancel" onclick="document.getElementById('notes-modal').style.display='none'">Cancel</button>
+      <button class="modal-send" onclick="saveNote()">Save Note</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TOAST NOTIFICATION ══ -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+// CONSTANTS & STATE
+// ════════════════════════════════════════════════════════════════
+
+const CREDENTIALS = { user: 'priya.sharma', pass: 'tdc@2024' };
+const PAGE_SIZE = 10;
+
+// App-level state
+let currentPage = 0;
+let filteredClients = [];
+let allClients = [];      // Our 60 managed clients (30M + 30F)
+let matchPool = [];       // 100 profiles used as potential matches
+let activeClient = null;  // Currently viewed client
+let pendingSendClient = null;
+let pendingSendMatch = null;
+let sentMatches = [];     // Log of all sent introductions
+let clientNotes = {};     // { clientId: [{text, date}] }
+let clientStages = {};    // { clientId: stageName }  — journey tracker state
+let isDark = false;
+
+// Journey stages modeled after real Indian matrimonial platforms
+// (Shaadi.com, Jeevansathi use similar funnels)
+const JOURNEY_STAGES = ['Onboarding', 'Active', 'Shortlisting', 'Matched', 'Closed'];
+
+// ════════════════════════════════════════════════════════════════
+// DATA GENERATION
+// Generates realistic Indian profiles with all fields required
+// by the assignment plus research-based extras (manglik, diet,
+// family type, horoscope) common in Indian matrimonial apps
+// ════════════════════════════════════════════════════════════════
+
+const maleNames=['Aarav','Arjun','Rohit','Vikram','Karan','Rajan','Siddharth','Aditya','Nikhil','Kunal','Rahul','Kabir','Dev','Ishaan','Vivek','Manav','Shreyas','Tarun','Dhruv','Aman','Prateek','Sameer','Ankit','Gaurav','Harshit','Mohit','Rajat','Rohan','Shubham','Yash'];
+const femaleNames=['Priya','Ananya','Sneha','Kavya','Neha','Aisha','Diya','Ishita','Pooja','Meera','Ritu','Simran','Tanvi','Aditi','Nisha','Sakshi','Swati','Payal','Kiran','Divya','Akansha','Bhavna','Charu','Deepika','Eesha','Falguni','Garima','Hina','Ira','Jyoti'];
+const surnames=['Sharma','Gupta','Singh','Kumar','Mehta','Joshi','Patel','Verma','Agarwal','Bose','Chatterjee','Desai','Iyer','Kapoor','Malhotra','Nair','Pandey','Reddy','Shah','Trivedi','Yadav','Saxena','Khanna','Chopra','Bansal','Arora','Bhatia','Chandra','Dutta','Fernandes'];
+const cities=['Mumbai','Delhi','Bangalore','Hyderabad','Pune','Chennai','Kolkata','Ahmedabad','Jaipur','Lucknow','Chandigarh','Surat'];
+const companies=['TCS','Infosys','Wipro','HCL','Tech Mahindra','Accenture','Deloitte','KPMG','Goldman Sachs','JP Morgan','Flipkart','Amazon India','Microsoft India','Google India','Zomato','Swiggy','HDFC Bank','Razorpay','Paytm','Byju\'s'];
+const designations=['Software Engineer','Senior Developer','Product Manager','Data Analyst','Marketing Manager','Financial Analyst','Consultant','Business Analyst','Team Lead','Solution Architect','UX Designer','DevOps Engineer','VP Engineering','Director','Associate'];
+const colleges=['IIT Bombay','IIT Delhi','IIT Madras','IIT Kharagpur','BITS Pilani','NIT Trichy','VIT Vellore','DTU Delhi','IGDTUW Delhi','Pune University','Jadavpur University','Anna University'];
+const degrees=['B.Tech Computer Science','B.Tech Electronics','MBA Finance','B.Com','BA Economics','M.Tech','BCA','B.Sc Mathematics','Chartered Accountant','MBBS'];
+const castes=['Brahmin','Kshatriya','Vaishya','Kayastha','Rajput','Lingayat','Maratha','Nair','Iyer','Iyengar'];
+const religions=['Hindu','Jain','Sikh','Christian','Muslim','Buddhist'];
+const langs=['Hindi','English','Bengali','Tamil','Telugu','Kannada','Marathi','Gujarati','Punjabi'];
+const statuses=['Active','Matched','Pending','Onboarding'];
+const maritalList=['Never Married','Divorced','Widowed'];
+
+// Utility: random item from array
+function rnd(arr){ return arr[Math.floor(Math.random()*arr.length)] }
+// Utility: random int in range [a, b]
+function rndInt(a,b){ return Math.floor(Math.random()*(b-a+1))+a }
+// Utility: random Yes/No/Maybe for preference fields
+function rndYN(){ return rnd(['Yes','No','Maybe']) }
+
+// Generate a single profile with all biodata fields
+function genProfile(id, gender, ageMin, ageMax){
+  const fn = gender==='Male' ? rnd(maleNames) : rnd(femaleNames);
+  const ln = rnd(surnames);
+  const age = rndInt(ageMin, ageMax);
+  const dob = new Date(2024-age, rndInt(0,11), rndInt(1,28));
+  const income = rndInt(6,80)*100000;
+  return {
+    id, firstName:fn, lastName:ln, gender, dob:dob.toISOString().split('T')[0],
+    age, city:rnd(cities), country:'India',
+    height: gender==='Male' ? rndInt(165,185) : rndInt(152,170),
+    email:`${fn.toLowerCase()}.${ln.toLowerCase()}${rndInt(10,99)}@gmail.com`,
+    phone:`+91 ${rndInt(7000000000,9999999999)}`,
+    college:rnd(colleges), degree:rnd(degrees),
+    income, company:rnd(companies), designation:rnd(designations),
+    marital:rnd(maritalList),
+    languages: Array.from(new Set([rnd(langs),rnd(langs),'Hindi','English'])).slice(0,rndInt(2,4)),
+    siblings: rndInt(0,3), caste:rnd(castes), religion:rnd(religions),
+    wantKids:rndYN(), openRelocate:rndYN(), openPets:rndYN(),
+    smoking: rnd(['Non-smoker','Occasional','Regular']),
+    drinking: rnd(['Non-drinker','Social drinker','Regular']),
+    diet: rnd(['Vegetarian','Non-Vegetarian','Vegan','Jain']),
+    horoscope: rnd(['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces']),
+    manglik: rnd(['Yes','No','Partial']),     // critical field in Indian matrimony
+    familyType: rnd(['Nuclear','Joint','Extended']),
+    familyValues: rnd(['Liberal','Moderate','Traditional']),
+    status: rnd(statuses),
+    about:`${fn} is a ${rndInt(2,12)}-year experienced professional based in ${rnd(cities)}. Looking for a compatible life partner.`
+  }
+}
+
+// Seed all data on load
+function buildData(){
+  allClients = [];
+  for(let i=0;i<30;i++) allClients.push(genProfile(i+1,'Male',26,38));
+  for(let i=0;i<30;i++) allClients.push(genProfile(31+i,'Female',23,35));
+  matchPool = [];
+  for(let i=0;i<50;i++) matchPool.push(genProfile(1000+i,'Female',22,32));
+  for(let i=0;i<50;i++) matchPool.push(genProfile(1100+i,'Male',26,38));
+}
+buildData();
+
+// ════════════════════════════════════════════════════════════════
+// PROFILE COMPLETENESS
+// Scores how filled-in a profile is (0–100%).
+// Based on Shaadi.com's "profile strength" concept —
+// higher completeness = better match visibility.
+// ════════════════════════════════════════════════════════════════
+
+const COMPLETENESS_FIELDS = ['firstName','lastName','dob','height','email','phone','college','degree','income','company','designation','marital','languages','siblings','caste','religion','wantKids','openRelocate','openPets','diet','horoscope','manglik','familyType','familyValues','about'];
+
+function profileCompleteness(c){
+  const filled = COMPLETENESS_FIELDS.filter(f => c[f] !== undefined && c[f] !== '' && c[f] !== null);
+  return Math.round((filled.length / COMPLETENESS_FIELDS.length) * 100);
+}
+
+// ════════════════════════════════════════════════════════════════
+// MATCHING ALGORITHM
+// Gender-specific scoring as specified in the assignment.
+// Research basis: Shaadi.com, Jeevansathi, BharatMatrimony use
+// weighted compatibility scoring across religion, lifestyle,
+// location, and preferences.
+// ════════════════════════════════════════════════════════════════
+
+function scoreMatch(client, candidate){
+  let score = 0;
+  let reasons = [];
+
+  if(client.gender === 'Male'){
+    // Traditional Indian matrimonial logic for male clients:
+    // preference for younger, shorter, lower-income matches
+    // with aligned views on children (per assignment spec)
+    if(candidate.age <= client.age-1 && candidate.age >= client.age-8){ score+=25; reasons.push('Age compatibility') }
+    if(candidate.income <= client.income*0.85){ score+=15; reasons.push('Income alignment') }
+    if(candidate.height <= client.height-3){ score+=10; reasons.push('Height compatible') }
+    if(candidate.wantKids === client.wantKids){ score+=20; reasons.push('Shared views on children') }
+  } else {
+    // Compatibility-first logic for female clients —
+    // focuses on values, career, lifestyle, relocation readiness
+    if(Math.abs(candidate.age-client.age) <= 5){ score+=20; reasons.push('Age compatible') }
+    if(candidate.openRelocate===client.openRelocate || candidate.openRelocate==='Yes'){ score+=15; reasons.push('Relocation aligned') }
+    if(candidate.familyValues===client.familyValues){ score+=15; reasons.push('Shared family values') }
+    if(candidate.income >= client.income){ score+=15; reasons.push('Financial stability') }
+    if(candidate.wantKids===client.wantKids){ score+=15; reasons.push('Children views match') }
+  }
+
+  // Universal compatibility factors (apply to all genders)
+  if(candidate.religion===client.religion){ score+=15; reasons.push('Same religion') }
+  if(candidate.diet===client.diet){ score+=10; reasons.push('Dietary match') }
+  if(candidate.city===client.city){ score+=10; reasons.push('Same city') }
+  if(candidate.drinking===client.drinking){ score+=5; reasons.push('Lifestyle match') }
+  if(candidate.openPets===client.openPets){ score+=5; reasons.push('Pet preferences align') }
+  const sharedLangs = candidate.languages.filter(l=>client.languages.includes(l));
+  if(sharedLangs.length > 1){ score+=5; reasons.push(`Shared languages: ${sharedLangs.join(', ')}`) }
+
+  return { score: Math.min(score, 100), reasons };
+}
+
+function getMatchLabel(score){
+  if(score>=70) return {label:'High Potential', cls:'score-high'};
+  if(score>=45) return {label:'Good Match', cls:'score-med'};
+  return {label:'Possible Match', cls:'score-low'};
+}
+
+// Return top 9 matches for a client from the pool
+function getMatchesForClient(client){
+  return matchPool
+    .filter(p => p.gender !== client.gender)
+    .map(p => ({ ...p, ...scoreMatch(client, p) }))
+    .sort((a,b) => b.score - a.score)
+    .slice(0, 9);
+}
+
+// ════════════════════════════════════════════════════════════════
+// AI INTEGRATION — Claude API
+// Two use cases:
+// 1. scoreMatch AI insight: personalized 1-2 sentence explanation
+// 2. generateIntroEmail: warm email to send to the client
+// ════════════════════════════════════════════════════════════════
+
+async function generateAIInsight(client, match){
+  const prompt = `You are a professional Indian matchmaker. Given two profiles, write a 1-2 sentence match insight explaining why they could be a good match. Be warm, specific, and realistic.
+
+Client: ${client.firstName} ${client.lastName}, ${client.age}yrs, ${client.city}, ${client.designation} at ${client.company}, ${client.religion}, ${client.familyValues} values, wants kids: ${client.wantKids}, relocate: ${client.openRelocate}
+Match: ${match.firstName} ${match.lastName}, ${match.age}yrs, ${match.city}, ${match.designation} at ${match.company}, ${match.religion}, ${match.familyValues} values, wants kids: ${match.wantKids}, relocate: ${match.openRelocate}
+
+Respond with ONLY the insight, no preamble.`;
+
+  try{
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        // Add your API key here for standalone hosting:
+        // 'x-api-key': 'YOUR_KEY',
+        // 'anthropic-version': '2023-06-01',
+        // 'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:150,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data = await res.json();
+    return data.content?.[0]?.text || '';
+  } catch(e){ return ''; }
+}
+
+async function generateIntroEmail(client, match){
+  const prompt = `Write a short, warm matchmaker email introducing a potential match to ${client.firstName}. 3-4 sentences, professional yet warm, 2-3 specific compatibility points mentioned.
+
+Client: ${client.firstName} ${client.lastName}, ${client.age}yrs, ${client.designation}, ${client.city}
+Match: ${match.firstName} ${match.lastName}, ${match.age}yrs, ${match.designation} at ${match.company}, ${match.city}
+
+Respond with ONLY the email body.`;
+  try{
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        // 'x-api-key': 'YOUR_KEY',
+        // 'anthropic-version': '2023-06-01',
+        // 'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:200,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data = await res.json();
+    return data.content?.[0]?.text || defaultEmail(client,match);
+  } catch(e){ return defaultEmail(client,match); }
+}
+
+// Fallback email if API is unavailable
+function defaultEmail(client, match){
+  return `Dear ${client.firstName},\n\nWe are pleased to introduce you to ${match.firstName} ${match.lastName}, a ${match.designation} based in ${match.city}. Based on your profiles, we believe you share meaningful compatibility in values, lifestyle, and life goals.\n\nWe encourage you to review ${match.firstName}'s profile and let us know if you'd like to proceed with an introduction.\n\nWarm regards,\nPriya Sharma\nThe Date Crew`;
+}
+
+// ════════════════════════════════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════════════════════════════════
+
+function initStats(){
+  document.getElementById('stat-total').textContent = allClients.length;
+  document.getElementById('stat-active').textContent = allClients.filter(c=>c.status==='Active').length;
+  document.getElementById('stat-matched').textContent = allClients.filter(c=>c.status==='Matched').length;
+  document.getElementById('stat-pending').textContent = allClients.filter(c=>c.status==='Pending').length;
+  // Show 5 most recent clients on dashboard
+  const recent = allClients.slice(0,5);
+  document.getElementById('dashboard-recent').innerHTML = `
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:background 0.3s,border-color 0.3s">
+      <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-size:12px;font-weight:500;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase">Recent Clients</div>
+      ${recent.map(c=>`
+        <div class="client-row" onclick="openDetail(${c.id})" style="grid-template-columns:2fr 1fr 1fr 1fr 100px">
+          <div class="client-name-cell">
+            <div class="c-avatar ${c.gender.toLowerCase()}">${c.firstName[0]}${c.lastName[0]}</div>
+            <div><div class="c-name">${c.firstName} ${c.lastName}</div><div class="c-email">${c.city}</div></div>
+          </div>
+          <div style="font-size:13px">${c.age} yrs</div>
+          <div style="font-size:13px;color:var(--muted)">${c.company.split(' ')[0]}</div>
+          <div><span class="status-tag tag-${c.status.toLowerCase()}">${c.status}</span></div>
+          <div><button class="view-btn" onclick="event.stopPropagation();openDetail(${c.id})">View →</button></div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function initCityFilter(){
+  const cs = [...new Set(allClients.map(c=>c.city))].sort();
+  const sel = document.getElementById('filter-city');
+  cs.forEach(ci=>{ const o=document.createElement('option'); o.textContent=ci; sel.appendChild(o); });
+}
+
+// ════════════════════════════════════════════════════════════════
+// CLIENT TABLE — with completeness bar in each row
+// ════════════════════════════════════════════════════════════════
+
+function renderTable(){
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const fs = document.getElementById('filter-status').value;
+  const fg = document.getElementById('filter-gender').value;
+  const fc = document.getElementById('filter-city').value;
+
+  // Apply all active filters
+  filteredClients = allClients.filter(c => {
+    const m = !q || `${c.firstName} ${c.lastName} ${c.city} ${c.designation} ${c.company}`.toLowerCase().includes(q);
+    return m && (!fs||c.status===fs) && (!fg||c.gender===fg) && (!fc||c.city===fc);
+  });
+
+  const start = currentPage * PAGE_SIZE;
+  const pageClients = filteredClients.slice(start, start+PAGE_SIZE);
+
+  document.getElementById('client-rows').innerHTML = pageClients.map(c => {
+    const pct = profileCompleteness(c);
+    // Color completeness bar: green if ≥80%, amber if ≥50%, rose if below
+    const barColor = pct>=80 ? 'var(--success)' : pct>=50 ? '#B8600B' : 'var(--rose)';
+    return `
+      <div class="client-row" onclick="openDetail(${c.id})">
+        <div class="client-name-cell">
+          <div class="c-avatar ${c.gender.toLowerCase()}">${c.firstName[0]}${c.lastName[0]}</div>
+          <div><div class="c-name">${c.firstName} ${c.lastName}</div><div class="c-email">${c.email}</div></div>
+        </div>
+        <div style="font-size:13px">${c.age}</div>
+        <div style="font-size:13px">${c.city}</div>
+        <div style="font-size:12px;color:var(--muted)">${c.designation}</div>
+        <div><span class="status-tag tag-${c.status.toLowerCase()}">${c.status}</span></div>
+        <div class="completeness-mini">
+          <span>${pct}%</span>
+          <div class="completeness-bar"><div class="completeness-fill" style="width:${pct}%;background:${barColor}"></div></div>
+        </div>
+        <div><button class="view-btn" onclick="event.stopPropagation();openDetail(${c.id})">View →</button></div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('pager-info').textContent = `Showing ${Math.min(start+1,filteredClients.length)}–${Math.min(start+PAGE_SIZE,filteredClients.length)} of ${filteredClients.length}`;
+  document.getElementById('btn-prev').disabled = currentPage===0;
+  document.getElementById('btn-next').disabled = start+PAGE_SIZE >= filteredClients.length;
+}
+
+function changePage(dir){ currentPage+=dir; renderTable(); }
+
+// ════════════════════════════════════════════════════════════════
+// CSV EXPORT
+// Exports the currently filtered client list as a downloadable CSV.
+// Useful for matchmakers to work offline or share with colleagues.
+// ════════════════════════════════════════════════════════════════
+
+function exportCSV(){
+  const cols = ['firstName','lastName','gender','age','city','designation','company','income','status','marital','religion','wantKids','openRelocate'];
+  const header = cols.join(',');
+  const rows = filteredClients.map(c => cols.map(col => `"${c[col]}"`).join(','));
+  const csv = [header, ...rows].join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download='tdc_clients.csv'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV exported successfully');
+}
+
+// ════════════════════════════════════════════════════════════════
+// DETAIL VIEW — full biodata + journey tracker + matches + notes
+// ════════════════════════════════════════════════════════════════
+
+function fmt(n){ return '₹'+Math.round(n/100000)+'L p.a.' }
+
+function getJourneyIndex(clientId, defaultStatus){
+  const saved = clientStages[clientId];
+  if(saved) return JOURNEY_STAGES.indexOf(saved);
+  return JOURNEY_STAGES.indexOf(defaultStatus) > -1 ? JOURNEY_STAGES.indexOf(defaultStatus) : 1;
+}
+
+function renderJourneyTracker(client){
+  const idx = getJourneyIndex(client.id, client.status);
+  const steps = JOURNEY_STAGES.map((s,i) => {
+    const cls = i < idx ? 'done' : i===idx ? 'current' : '';
+    const icon = i < idx ? '✓' : i+1;
+    return `<div class="journey-step ${cls}"><div class="js-dot">${icon}</div><div class="js-label">${s}</div></div>`;
+  }).join('');
+  return `
+    <div class="journey-section">
+      <h3>Journey Stage</h3>
+      <div class="journey-steps">${steps}</div>
+      <select class="stage-select" onchange="updateStage(${client.id},this.value)">
+        ${JOURNEY_STAGES.map(s=>`<option ${s===JOURNEY_STAGES[idx]?'selected':''}>${s}</option>`).join('')}
+      </select>
+    </div>`;
+}
+
+// Update a client's journey stage and re-render the tracker
+function updateStage(clientId, newStage){
+  clientStages[clientId] = newStage;
+  const idx = JOURNEY_STAGES.indexOf(newStage);
+  const trackerEl = document.querySelector('.journey-steps');
+  if(trackerEl) trackerEl.outerHTML = `<div class="journey-steps">${JOURNEY_STAGES.map((s,i)=>{
+    const cls = i<idx?'done':i===idx?'current':'';
+    return `<div class="journey-step ${cls}"><div class="js-dot">${i<idx?'✓':i+1}</div><div class="js-label">${s}</div></div>`;
+  }).join('')}</div>`;
+  showToast(`Stage updated to: ${newStage}`);
+}
+
+function openDetail(id){
+  const c = allClients.find(x=>x.id===id) || matchPool.find(x=>x.id===id);
+  if(!c) return;
+  activeClient = c;
+  const matches = getMatchesForClient(c);
+  const pct = profileCompleteness(c);
+
+  // Build the dark header with avatar, tags, and completeness
+  document.getElementById('detail-header').innerHTML = `
+    <div><button class="detail-back" onclick="goBackFromDetail()">← Back</button></div>
+    <div class="detail-avatar ${c.gender.toLowerCase()}">${c.firstName[0]}${c.lastName[0]}</div>
+    <div class="detail-meta" style="flex:1">
+      <h2>${c.firstName} ${c.lastName}</h2>
+      <p>${c.designation} · ${c.company} · ${c.city}</p>
+      <div class="detail-tags">
+        <span class="detail-tag">${c.age} yrs</span>
+        <span class="detail-tag">${c.gender}</span>
+        <span class="detail-tag">${c.religion}</span>
+        <span class="detail-tag">${c.marital}</span>
+        <span class="detail-tag">${pct}% complete</span>
+        <span class="detail-tag status-tag tag-${c.status.toLowerCase()}">${c.status}</span>
+      </div>
+    </div>`;
+
+  const notes = clientNotes[c.id] || [];
+
+  document.getElementById('detail-body').innerHTML = `
+    ${renderJourneyTracker(c)}
+    <div class="detail-grid">
+      <div class="detail-section">
+        <h3>Personal Details</h3>
+        <div class="field-grid">
+          <div class="field-item"><label>Full Name</label><p>${c.firstName} ${c.lastName}</p></div>
+          <div class="field-item"><label>Date of Birth</label><p>${c.dob}</p></div>
+          <div class="field-item"><label>Height</label><p>${c.height} cm</p></div>
+          <div class="field-item"><label>Horoscope</label><p>${c.horoscope}</p></div>
+          <div class="field-item"><label>Religion</label><p>${c.religion}</p></div>
+          <div class="field-item"><label>Caste</label><p>${c.caste}</p></div>
+          <div class="field-item"><label>Manglik</label><p>${c.manglik}</p></div>
+          <div class="field-item"><label>Diet</label><p>${c.diet}</p></div>
+          <div class="field-item"><label>Smoking</label><p>${c.smoking}</p></div>
+          <div class="field-item"><label>Drinking</label><p>${c.drinking}</p></div>
+          <div class="field-item"><label>Siblings</label><p>${c.siblings}</p></div>
+          <div class="field-item"><label>Family Type</label><p>${c.familyType}</p></div>
+          <div class="field-item"><label>Family Values</label><p>${c.familyValues}</p></div>
+          <div class="field-item"><label>Languages</label><p>${c.languages.join(', ')}</p></div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <h3>Professional & Contact</h3>
+        <div class="field-grid">
+          <div class="field-item"><label>Email</label><p style="font-size:11px">${c.email}</p></div>
+          <div class="field-item"><label>Phone</label><p>${c.phone}</p></div>
+          <div class="field-item"><label>College</label><p style="font-size:11px">${c.college}</p></div>
+          <div class="field-item"><label>Degree</label><p style="font-size:11px">${c.degree}</p></div>
+          <div class="field-item"><label>Company</label><p>${c.company}</p></div>
+          <div class="field-item"><label>Designation</label><p>${c.designation}</p></div>
+          <div class="field-item"><label>Annual Income</label><p>${fmt(c.income)}</p></div>
+          <div class="field-item"><label>City</label><p>${c.city}</p></div>
+          <div class="field-item"><label>Country</label><p>${c.country}</p></div>
+          <div class="field-item"><label>Marital Status</label><p>${c.marital}</p></div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <h3>Preferences</h3>
+        <div class="field-grid">
+          <div class="field-item"><label>Want Kids</label><p>${c.wantKids}</p></div>
+          <div class="field-item"><label>Open to Relocate</label><p>${c.openRelocate}</p></div>
+          <div class="field-item"><label>Open to Pets</label><p>${c.openPets}</p></div>
+          <div class="field-item"><label>Diet</label><p>${c.diet}</p></div>
+        </div>
+      </div>
+      <div class="detail-section">
+        <h3>About</h3>
+        <p style="font-size:13px;color:var(--ink);line-height:1.6">${c.about}</p>
+        <div style="margin-top:12px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Profile Completeness</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="completeness-bar" style="flex:1;height:6px"><div class="completeness-fill" style="width:${pct}%"></div></div>
+            <span style="font-size:12px;font-weight:500;color:var(--rose)">${pct}%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="matches-section">
+      <h3>Suggested Matches</h3>
+      <p class="matches-sub">Top ${matches.length} matches from ${matchPool.filter(p=>p.gender!==c.gender).length} profiles · Ranked by compatibility score</p>
+      <button class="ai-generate-btn" id="ai-score-btn" onclick="runAIScoring(${c.id})">
+        ✦ Generate AI Match Insights
+      </button>
+      <div class="matches-grid" id="matches-grid">
+        ${matches.map(m=>renderMatchCard(c,m)).join('')}
+      </div>
+    </div>
+
+    <div class="notes-section">
+      <h3>Matchmaker Notes</h3>
+      <div id="notes-list">
+        ${notes.length===0
+          ? '<p style="color:var(--muted);font-size:13px;margin-bottom:12px">No notes yet.</p>'
+          : notes.map(n=>`<div class="note-item"><p>${n.text}</p><div class="note-date">${n.date}</div></div>`).join('')}
+      </div>
+      <textarea class="notes-input" id="inline-note" placeholder="Add a note about this client…"></textarea>
+      <button class="add-note-btn" onclick="addInlineNote(${c.id})">Add Note</button>
+    </div>`;
+
+  showPage('detail');
+}
+
+function goBackFromDetail(){
+  const active = document.querySelector('.nav-item.active');
+  if(active && active.textContent.includes('Dashboard')) showPage('dashboard');
+  else showPage('clients');
+}
+
+// ════════════════════════════════════════════════════════════════
+// MATCH CARDS
+// ════════════════════════════════════════════════════════════════
+
+function renderMatchCard(client, m){
+  const {score, reasons, aiInsight} = m;
+  const ml = getMatchLabel(score);
+  return `
+    <div class="match-card" id="mcard-${m.id}">
+      <div class="match-top">
+        <div class="match-avatar ${m.gender.toLowerCase()}">${m.firstName[0]}${m.lastName[0]}</div>
+        <div>
+          <div class="match-name">${m.firstName} ${m.lastName}</div>
+          <div class="match-info">${m.age} yrs · ${m.city}<br>${m.designation}, ${m.company}<br>${fmt(m.income)} · ${m.religion}</div>
+        </div>
+        <div class="score-badge ${ml.cls}">
+          <div class="score-num">${score}</div>
+          <div class="score-label">${ml.label}</div>
+        </div>
+      </div>
+      <div class="match-reason">${reasons.slice(0,3).join(' · ')}</div>
+      ${aiInsight ? `<div class="ai-reason">✦ ${aiInsight}</div>` : ''}
+      <div class="match-actions">
+        <button class="send-btn" onclick="openSendModal(${client.id},${m.id})">Send Match</button>
+        <button class="notes-btn" onclick="openNotesModal(${client.id},'${m.firstName} ${m.lastName}')">Note</button>
+      </div>
+    </div>`;
+}
+
+// Run AI scoring on top 3 matches and update their cards
+async function runAIScoring(clientId){
+  const btn = document.getElementById('ai-score-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading-dots">Generating AI insights</span>';
+  const c = allClients.find(x=>x.id===clientId);
+  const matches = getMatchesForClient(c);
+  const top = matches.slice(0,3);
+  for(let i=0;i<top.length;i++){
+    top[i].aiInsight = await generateAIInsight(c, top[i]);
+    const card = document.getElementById('mcard-'+top[i].id);
+    if(card) card.outerHTML = renderMatchCard(c, top[i]);
+  }
+  btn.innerHTML = '✓ AI Insights Generated (Top 3)';
+  btn.style.background = 'var(--success)';
+}
+
+// ════════════════════════════════════════════════════════════════
+// SEND MATCH MODAL
+// Opens a preview of the AI-generated intro email before sending
+// ════════════════════════════════════════════════════════════════
+
+async function openSendModal(clientId, matchId){
+  pendingSendClient = allClients.find(x=>x.id===clientId);
+  pendingSendMatch = matchPool.find(x=>x.id===matchId);
+  if(!pendingSendClient || !pendingSendMatch) return;
+  document.getElementById('modal-subtitle').textContent =
+    `Sending ${pendingSendMatch.firstName} ${pendingSendMatch.lastName}'s profile to ${pendingSendClient.firstName}`;
+  document.getElementById('modal-email-body').textContent = 'Generating personalised introduction…';
+  document.getElementById('send-modal').style.display = 'flex';
+  const email = await generateIntroEmail(pendingSendClient, pendingSendMatch);
+  document.getElementById('modal-email-body').textContent = email;
+}
+
+function closeModal(){ document.getElementById('send-modal').style.display='none'; }
+
+function confirmSend(){
+  closeModal();
+  if(!pendingSendClient || !pendingSendMatch) return;
+  sentMatches.push({
+    client: `${pendingSendClient.firstName} ${pendingSendClient.lastName}`,
+    match: `${pendingSendMatch.firstName} ${pendingSendMatch.lastName}`,
+    date: new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})
+  });
+  renderMatchActivity();
+  showToast(`✓ Introduction sent to ${pendingSendClient.firstName}`);
+}
+
+// ════════════════════════════════════════════════════════════════
+// MATCH ACTIVITY LOG
+// ════════════════════════════════════════════════════════════════
+
+function renderMatchActivity(){
+  const el = document.getElementById('match-activity-list');
+  if(!sentMatches.length){
+    el.innerHTML='<p style="color:var(--muted);font-size:13px">No matches sent yet. Open a client profile and click "Send Match".</p>';
+    return;
+  }
+  el.innerHTML = sentMatches.slice().reverse().map(m=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <p style="font-size:13px;font-weight:500">${m.client} <span style="color:var(--rose)">♥</span> ${m.match}</p>
+        <p style="font-size:11px;color:var(--muted)">Introduction sent · ${m.date}</p>
+      </div>
+      <span class="status-tag tag-matched">Sent</span>
+    </div>`).join('');
+}
+
+// ════════════════════════════════════════════════════════════════
+// NOTES — inline on detail page + modal from match cards
+// ════════════════════════════════════════════════════════════════
+
+let currentNoteTarget = null;
+
+function addInlineNote(clientId){
+  const txt = document.getElementById('inline-note').value.trim();
+  if(!txt) return;
+  if(!clientNotes[clientId]) clientNotes[clientId] = [];
+  clientNotes[clientId].push({
+    text: txt,
+    date: new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
+  });
+  document.getElementById('inline-note').value = '';
+  document.getElementById('notes-list').innerHTML = clientNotes[clientId]
+    .map(n=>`<div class="note-item"><p>${n.text}</p><div class="note-date">${n.date}</div></div>`)
+    .join('');
+  showToast('Note saved');
+}
+
+function openNotesModal(clientId, matchName){
+  currentNoteTarget = {clientId, matchName};
+  document.getElementById('notes-modal-title').textContent = `Note about ${matchName}`;
+  document.getElementById('notes-modal-input').value = '';
+  document.getElementById('notes-modal').style.display = 'flex';
+}
+
+function saveNote(){
+  const txt = document.getElementById('notes-modal-input').value.trim();
+  if(!txt) return;
+  const {clientId, matchName} = currentNoteTarget;
+  if(!clientNotes[clientId]) clientNotes[clientId] = [];
+  clientNotes[clientId].push({
+    text: `[Re: ${matchName}] ${txt}`,
+    date: new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})
+  });
+  document.getElementById('notes-modal').style.display = 'none';
+  showToast('Note saved');
+}
+
+// ════════════════════════════════════════════════════════════════
+// DARK MODE TOGGLE
+// Toggles .dark class on body for full theme switch
+// ════════════════════════════════════════════════════════════════
+
+function toggleDark(){
+  isDark = !isDark;
+  document.body.classList.toggle('dark', isDark);
+  document.getElementById('dark-track').classList.toggle('on', isDark);
+  document.getElementById('dark-label').textContent = isDark ? 'Light mode' : 'Dark mode';
+}
+
+// ════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════════════════
+
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  const navMap = {dashboard:0, clients:1, matches:2};
+  if(name!=='detail') document.querySelectorAll('.nav-item')[navMap[name]]?.classList.add('active');
+  if(name==='clients'){ currentPage=0; renderTable(); }
+  if(name==='matches') renderMatchActivity();
+}
+
+// ════════════════════════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════════════════════════
+
+function doLogin(){
+  const u = document.getElementById('login-user').value;
+  const p = document.getElementById('login-pass').value;
+  if(u===CREDENTIALS.user && p===CREDENTIALS.pass){
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='flex';
+    initStats(); initCityFilter(); renderTable(); renderMatchActivity();
+  } else {
+    document.getElementById('login-err').textContent = 'Invalid credentials. Try: priya.sharma / tdc@2024';
+  }
+}
+
+function doLogout(){
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+}
+
+// ════════════════════════════════════════════════════════════════
+// UTILITIES
+// ════════════════════════════════════════════════════════════════
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+document.getElementById('login-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+</script>
+</body>
+</html>
